@@ -13,14 +13,12 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('username')->unique();
+            $table->string('username')->unique()->index();
             $table->string('name');
             $table->string('email')->nullable()->unique();
             $table->string('password');
             $table->string('phone')->unique();
-            $table->string('transaction_pin')->nullable(); // 4-digit PIN
-            $table->integer('pin_attempt')->default(0); // Track PIN attempts
-            $table->boolean('is_pin_locked')->default(false); // Lock PIN after too many attempts
+            $table->string('transaction_pin')->nullable()->index(); // 6-digit PIN
             $table->timestamps();
         });
 

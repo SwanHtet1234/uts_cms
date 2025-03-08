@@ -10,14 +10,19 @@ class CardTypeScheme extends Model
     /** @use HasFactory<\Database\Factories\CardTypeSchemeFactory> */
     use HasFactory;
 
-    protected $fillable = ['type_id', 'scheme_id'];
+    protected $fillable = [
+        'type_id',
+        'scheme_id',
+        'image',
+    ];
 
-    public function type()
+    // Define relationships
+    public function cardType()
     {
         return $this->belongsTo(CardType::class, 'type_id');
     }
 
-    public function scheme()
+    public function cardScheme()
     {
         return $this->belongsTo(CardScheme::class, 'scheme_id');
     }

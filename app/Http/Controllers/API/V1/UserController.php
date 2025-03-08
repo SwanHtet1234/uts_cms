@@ -38,29 +38,51 @@ class UserController extends Controller
      */
     public function updateProfile(Request $request)
     {
-        $user = $request->user();
-
         // Validate the request
         $request->validate([
+            'user_id' => 'required|exists:users,id',
             'name' => 'sometimes|string|max:255',
-            'email' => 'sometimes|nullable|email|unique:users,email,' . $user->id,
-            'phone' => 'sometimes|string|unique:users,phone,' . $user->id,
+            'email' => 'sometimes|email|unique:users,email,' . auth()->id(),
+            'phone' => 'sometimes|string|unique:users,phone,' . auth()->id(),
         ]);
 
-        // Update the user's profile
-        $user->update($request->only(['name', 'email', 'phone']));
+        // Fetch the authenticated user
+        $user = User::findOrFail($request->user_id);
 
-        return response()->json([
-            'message' => 'Profile updated successfully',
-            'user' => [
-                'id' => $user->id,
-                'username' => $user->username,
-                'name' => $user->name,
-                'email' => $user->email,
-                'phone' => $user->phone,
-            ],
-    ]);
-}
+        // Update user data
+        if ($request->has('name')) {
+            $user->name = $request->name;
+        }
+        if ($request->has('email')) {
+            $user->email = $request->email;
+        }
+        if ($request->has('phone')) {
+            $user->phone = $request->phone;
+        }
+
+        // Save the updated user
+        $user->save();
+
+        // Prepare the response data
+        $responseData = [
+            'id' => $user->id,
+            'username' => $user->username,
+            'name' => $user->name,
+            'email' => $user->email,
+            'phone' => $user->phone,
+        ];
+
+        // Prepare the response
+        $response = [
+            'status' => 'success',
+            'code' => 200,
+            'message' => 'User data updated successfully.',
+            'data' => $responseData,
+            'metadata' => null,
+        ];
+
+        return response()->json($response, 200);
+    }
 
     /**
      * Remove the specified resource from storage.
@@ -90,14 +112,32 @@ class UserController extends Controller
      */
     public function getProfile(Request $request)
     {
-        $user = $request->user();
+        // Validate the request
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+        ]);
 
-        return response()->json([
+        // Fetch the authenticated user
+        $user = User::findOrFail($request->user_id);
+
+        // Prepare the response data
+        $responseData = [
             'id' => $user->id,
             'username' => $user->username,
             'name' => $user->name,
             'email' => $user->email,
             'phone' => $user->phone,
-        ]);
+        ];
+
+        // Prepare the response
+        $response = [
+            'status' => 'success',
+            'code' => 200,
+            'message' => 'User data retrieved successfully.',
+            'data' => $responseData,
+            'metadata' => null,
+        ];
+
+        return response()->json($response, 200);
     }
 }

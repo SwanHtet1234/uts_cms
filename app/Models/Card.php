@@ -12,21 +12,32 @@ class Card extends Model
 
     protected $fillable = [
         'user_id',
-        'card_number',
-        'expire_date',
+        'cardNumber',
+        'expireDate',
         'cvv',
         'balance',
         'type_scheme_id',
         'status',
     ];
 
+    // Define relationships
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    public function typeScheme()
+    public function cardTypeScheme()
     {
         return $this->belongsTo(CardTypeScheme::class, 'type_scheme_id');
+    }
+
+    public function cardServices()
+    {
+        return $this->hasMany(CardService::class);
+    }
+
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class);
     }
 }

@@ -17,11 +17,15 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             SecurityQuestionSeeder::class,
+            UserSeeder::class,
             CardTypeSeeder::class,
             CardSchemeSeeder::class,
             CardTypeSchemeSeeder::class,
-            UserSeeder::class,
+            ServiceSeeder::class,
             CardSeeder::class,
+            CardServiceSeeder::class,
+            TransactionTypeSeeder::class,
+            TransactionSeeder::class,
         ]);
     }
 }

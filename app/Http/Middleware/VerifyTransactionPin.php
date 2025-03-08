@@ -6,6 +6,9 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
+use App\Models\User;
 
 class VerifyTransactionPin
 {
@@ -16,34 +19,37 @@ class VerifyTransactionPin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $user = $request->user();
+        // Get the authenticated user
+        $user = User::findOrFail($request->user_id);
 
-        // Check if the user has set a transaction PIN
-        if (!$user->transaction_pin) {
-            return response()->json(['message' => 'Transaction PIN not set'], 403);
+        // Check if the user has a transaction pin
+        if (empty($user->transaction_pin)) {
+            return response()->json([
+                'status' => 'error',
+                'code' => 403,
+                'message' => 'Transaction pin not set.',
+                'data' => null,
+                'metadata' => null,
+            ], 403);
         }
 
-        // Check if the PIN is locked
-        if ($user->is_pin_locked) {
-            return response()->json(['message' => 'Transaction PIN is locked'], 403);
+        // Validate the transaction pin
+        $request->validate([
+            'transaction_pin' => 'required|string|size:6',
+        ]);
+
+        // Check if the provided pin matches the user's transaction pin
+        if ($request->transaction_pin !== $user->transaction_pin) {
+            return response()->json([
+                'status' => 'error',
+                'code' => 401,
+                'message' => 'Invalid transaction pin.',
+                'data' => null,
+                'metadata' => null,
+            ], 401);
         }
 
-        // Verify the transaction PIN
-        if (!Hash::check($request->transaction_pin, $user->transaction_pin)) {
-            $user->increment('pin_attempt');
-
-            // Lock the PIN after 3 failed attempts
-            if ($user->pin_attempt >= 3) {
-                $user->update(['is_pin_locked' => true]);
-                return response()->json(['message' => 'Too many attempts. PIN locked.'], 403);
-            }
-
-            return response()->json(['message' => 'Invalid transaction PIN'], 401);
-        }
-
-        // Reset PIN attempts on successful verification
-        $user->update(['pin_attempt' => 0]);
-
+        // Proceed to the next middleware or controller
         return $next($request);
     }
 }

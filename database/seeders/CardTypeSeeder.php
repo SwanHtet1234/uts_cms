@@ -13,7 +13,7 @@ class CardTypeSeeder extends Seeder
      */
     public function run(): void
     {
-        $types = ['Credit', 'Debit', 'ATM'];
+        $types = ['ATM', 'Credit', 'Debit', 'Prepaid', 'Virtual', 'Business'];
 
         foreach ($types as $type) {
             CardType::create(['type' => $type]);

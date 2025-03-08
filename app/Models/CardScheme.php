@@ -12,7 +12,8 @@ class CardScheme extends Model
 
     protected $fillable = ['scheme_name'];
 
-    public function types()
+    // Define relationships
+    public function cardTypeSchemes()
     {
         return $this->hasMany(CardTypeScheme::class, 'scheme_id');
     }

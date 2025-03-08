@@ -10,6 +10,8 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\UserSecurityAnswer;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class SecurityQuestionController extends Controller
 {
@@ -20,10 +22,18 @@ class SecurityQuestionController extends Controller
      */
     public function index()
     {
-        $questions = SecurityQuestion::all();
+        // Fetch all security questions with only id and question fields
+        $questions = SecurityQuestion::select('id', 'question')->get()->take(3);
 
+        // Return the response
         return response()->json([
-            'questions' => $questions,
+            'status' => 'success',
+            'code' => 200,
+            'message' => 'Security questions fetched successfully.',
+            'data' => [
+                'questions' => $questions,
+            ],
+            'metadata' => null,
         ]);
     }
 
@@ -36,40 +46,52 @@ class SecurityQuestionController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store user answers to security questions.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
      */
-    // public function store(StoreSecurityQuestionRequest $request)
-    // {
-    //     //
-    // }
-
     public function store(Request $request)
     {
+        
+
+        // Validate the request using Laravel's built-in validation
         $request->validate([
             'user_id' => 'required|exists:users,id',
-            'answers' => 'nullable|array|max:3', // Allow skipping (nullable)
-            'answers.*.question_id' => 'required_with:answers|exists:security_questions,id',
-            'answers.*.answer' => 'required_with:answers|string',
+            'answers' => 'required|array|size:3',
+            'answers.*.question_id' => [
+                'required',
+                'exists:security_questions,id',
+                // Rule::unique('user_security_answers')->where(function ($query) use ($request) {
+                //     return $query->where('user_id', $request->user_id);
+                // }),
+            ],
+            'answers.*.answer' => 'required|string|min:1|not_regex:/^\s*$/',
+        ], [
+            'answers.*.answer.required' => 'The answer must not be empty',
+            'answers.size' => 'You must answer exactly 3 security questions.',
+            'answers.*.question_id.exists' => 'The question is not in the list.',
+            'answers.*.question_id.unique' => 'Each question can only be answered once.',
+            'answers.*.answer.not_regex' => 'The answer cannot be empty or consist of only whitespace.',
         ]);
 
-        $user = User::findOrFail($request->user_id);
-
-        // Delete existing answers (if any)
-        $user->securityAnswers()->delete();
-
-        // Save new answers (if provided)
-        if ($request->answers) {
-            foreach ($request->answers as $answer) {
-                $user->securityAnswers()->create([
-                    'question_id' => $answer['question_id'],
-                    'answer' => $answer['answer'],
-                ]);
-            }
+        // Store the answers
+        foreach ($request->answers as $answer) {
+            UserSecurityAnswer::create([
+                'user_id' => $request->user_id,
+                'question_id' => $answer['question_id'],
+                'answer' => trim($answer['answer']), // Trim whitespace
+            ]);
         }
 
+        // Return a success response
         return response()->json([
-            'message' => $request->answers ? 'Security answers saved successfully' : 'Security answers skipped',
-        ]);
+            'status' => 'success',
+            'code' => 201,
+            'message' => 'Security answers stored successfully.',
+            'data' => null,
+            'metadata' => null,
+        ], 201);
     }
 
     /**

@@ -23,11 +23,9 @@ class User extends Authenticatable
         'username',
         'name',
         'email',
-        'phone',
         'password',
+        'phone',
         'transaction_pin',
-        'pin_attempt',
-        'is_pin_locked',
     ];
 
     /**

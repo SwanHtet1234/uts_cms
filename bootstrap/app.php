@@ -6,6 +6,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use App\Http\Middleware\VerifyTransactionPin;
 use App\Http\Middleware\ValidateApiKey;
 use App\Http\Middleware\TrackLoginAttempts;
+use App\Http\Middleware\ValidateSanctumToken;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Middleware\ThrottleRequests;
@@ -25,9 +26,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'verify.pin' => VerifyTransactionPin::class,
-        ]);
-        $middleware->alias([
             'api.key' => ValidateApiKey::class,
+            'validate.sanctum.token' => ValidateSanctumToken::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
@@ -44,13 +44,39 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         // Handle validation errors
+        // $exceptions->renderable(function (ValidationException $e, $request) {
+        //     return response()->json([
+        //         'status' => 'error',
+        //         'code' => 422,
+        //         'message' => 'The given data was invalid.',
+        //         'data' => [
+        //             'errors' => $e->errors(),
+        //         ],
+        //         'metadata' => null,
+        //     ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        // });
+
         $exceptions->renderable(function (ValidationException $e, $request) {
+            // Adjust array keys to use one-based indexing
+            $errors = [];
+            foreach ($e->errors() as $field => $messages) {
+                if (str_contains($field, 'answers.')) {
+                    // Extract the index from the field name (e.g., "answers.0.question_id")
+                    preg_match('/answers\.(\d+)\./', $field, $matches);
+                    if (isset($matches[1])) {
+                        $index = (int)$matches[1] + 1; // Convert to one-based indexing
+                        $field = str_replace("answers.{$matches[1]}.", "answers.{$index}.", $field);
+                    }
+                }
+                $errors[$field] = $messages;
+            }
+    
             return response()->json([
                 'status' => 'error',
                 'code' => 422,
                 'message' => 'The given data was invalid.',
                 'data' => [
-                    'errors' => $e->errors(),
+                    'errors' => $errors,
                 ],
                 'metadata' => null,
             ], Response::HTTP_UNPROCESSABLE_ENTITY);

@@ -13,7 +13,7 @@ class CardSchemeSeeder extends Seeder
      */
     public function run(): void
     {
-        $schemes = ['MasterCard', 'Visa', 'American Express'];
+        $schemes = ['Master', 'Visa', 'JCB', 'MPU'];
 
         foreach ($schemes as $scheme) {
             CardScheme::create(['scheme_name' => $scheme]);

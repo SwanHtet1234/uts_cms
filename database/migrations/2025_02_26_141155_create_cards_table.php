@@ -12,14 +12,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('cards', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->string('card_number', 16)->unique();
-            $table->date('expire_date');
+            $table->id()->index();
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->string('cardNumber')->unique();
+            $table->date('expireDate');
             $table->integer('cvv');
             $table->float('balance');
             $table->foreignId('type_scheme_id')->constrained('card_type_schemes')->onDelete('cascade');
-            $table->boolean('status')->default(true);
+            $table->string('status');
             $table->timestamps();
         });
     }

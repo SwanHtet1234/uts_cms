@@ -159,12 +159,24 @@ class AuthController extends Controller
                 'expires_in' => 1440, // 1 day in minutes
             ];
 
-            if ($isFirstLogin) {
-                $responseData['first_login'] = true;
+            // if ($isFirstLogin) {
+            //     $responseData['first_login'] = true;
+            //     $responseMessage = 'Please complete your security questions and set a transaction pin.';
+            // } else {
+            //     $responseData['first_login'] = false;
+            //     $responseMessage = 'Login successful.';
+            // }
+
+            $responseData['security_flag'] = $hasSecurityQuestions ? true : false;
+            $responseData['set_pin_flag'] = $hasTransactionPin ? true : false;
+            if ($isFirstLogin){
                 $responseMessage = 'Please complete your security questions and set a transaction pin.';
+            } elseif (!$hasSecurityQuestions){
+                $responseMessage = 'Please complete your security questions.';
+            } elseif (!$hasTransactionPin){
+                $responseMessage = 'Please set a Transaction Pin.';
             } else {
-                $responseData['first_login'] = false;
-                $responseMessage = 'Login successful.';
+                $responseMessage = "Login successful.";
             }
 
             return response()->json([
@@ -188,21 +200,61 @@ class AuthController extends Controller
 
     public function setTransactionPin(Request $request)
     {
+        // Validate the request
         $request->validate([
-            'transaction_pin' => 'required|string|min:4|max:4',
+            'transaction_pin' => 'required|string|digits:6|numeric',
         ]);
 
-        $user = $request->user();
-        $user->transaction_pin = Hash::make($request->transaction_pin); // Hash the PIN
-        $user->save();
+        // Get the authenticated user
+        $authenticatedUser = User::findOrFail($request->user_id);
 
-        return response()->json(['message' => 'Transaction PIN set successfully'], 200);
+        // Check if the user has already set a transaction pin
+        if ($authenticatedUser->transaction_pin !== null) {
+            return response()->json([
+                'status' => 'error',
+                'code' => 400,
+                'message' => 'Transaction pin has already been set.',
+                'data' => null,
+                'metadata' => null,
+            ], 400);
+        }
+
+        // Update the user's transaction pin
+        $authenticatedUser->update([
+            'transaction_pin' => $request->transaction_pin,
+        ]);
+
+        // Return a success response
+        return response()->json([
+            'status' => 'success',
+            'code' => 200,
+            'message' => 'Transaction pin set successfully.',
+            'data' => null,
+            'metadata' => null,
+        ]);
     }
 
     public function logout(Request $request)
     {
+        // Validate the request
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'transaction_pin' => 'required|string|size:6',
+        ]);
+
+        // Revoke the current user's token
         $request->user()->currentAccessToken()->delete();
-        return response()->json(['message' => 'Logged out successfully'], 200);
+
+        // Prepare the response
+        $response = [
+            'status' => 'success',
+            'code' => 200,
+            'message' => 'Logged out successfully.',
+            'data' => null,
+            'metadata' => null,
+        ];
+
+        return response()->json($response, 200);
     }
 
     public function unlockPin(Request $request)

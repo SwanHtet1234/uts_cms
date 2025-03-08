@@ -13,16 +13,15 @@ class CardTypeSchemeSeeder extends Seeder
      */
     public function run(): void
     {
-        $combinations = [
-            ['type_id' => 1, 'scheme_id' => 1], // Credit + MasterCard
-            ['type_id' => 1, 'scheme_id' => 2], // Credit + Visa
-            ['type_id' => 2, 'scheme_id' => 1], // Debit + MasterCard
-            ['type_id' => 2, 'scheme_id' => 2], // Debit + Visa
-            ['type_id' => 3, 'scheme_id' => 3], // ATM + American Express
-        ];
-
-        foreach ($combinations as $combination) {
-            CardTypeScheme::create($combination);
+        for ($typeId = 1; $typeId <= 6; $typeId++) {
+            for ($schemeId = 1; $schemeId <= 4; $schemeId++) {
+                $imageNumber = ($typeId - 1) * 4 + $schemeId;
+                CardTypeScheme::create([
+                    'type_id' => $typeId,
+                    'scheme_id' => $schemeId,
+                    'image' => 'card_type_scheme_images/' . $imageNumber . '.png',
+                ]);
+            }
         }
     }
 }
